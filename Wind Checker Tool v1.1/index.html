@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wind Checker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="static/css/style.css" />
+</head>
+<body>
+
+  <!-- ── Sidebar ── -->
+  <div id="sidebar-wrapper" class="collapsed">
+    <aside id="sidebar">
+
+      <div class="sidebar-header">
+        <div class="sidebar-header-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+          </svg>
+          <span class="sidebar-header-label">My Locations</span>
+        </div>
+        <p id="sidebar-count" class="sidebar-count"></p>
+      </div>
+
+      <div class="sidebar-body">
+
+        <!-- Pin on map -->
+        <section class="section">
+          <div class="section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5"/>
+            </svg>
+            <span> Pin on map</span>
+          </div>
+          <button id="btn-selection" class="btn-primary">Enable selection</button>
+          <p id="click-hint" class="hint" style="display:none">Click anywhere on the map</p>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- By coordinates -->
+        <section class="section">
+          <div class="section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c-.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
+            </svg>
+            <span>By coordinates</span>
+          </div>
+          <form id="coord-form" class="form-fields">
+            <div class="field">
+              <label for="f-name">Name</label>
+              <input id="f-name" class="input" type="text" placeholder="My location" required />
+            </div>
+            <div class="field">
+              <label for="f-lat">Latitude</label>
+              <input id="f-lat" class="input mono" type="text" inputmode="decimal" placeholder="40.4168" required />
+            </div>
+            <div class="field">
+              <label for="f-lon">Longitude</label>
+              <input id="f-lon" class="input mono" type="text" inputmode="decimal" placeholder="-3.7038" required />
+            </div>
+            <div class="field">
+              <label for="f-group">Group (optional)</label>
+              <select id="f-group" class="input">
+                <option value="">No group</option>
+              </select>
+            </div>
+            <div id="coord-error" class="error-msg" style="display:none"></div>
+            <button type="submit" class="btn-primary">Save location</button>
+          </form>
+        </section>
+
+        <div id="saved-divider" class="divider"></div>
+
+        <!-- Groups section -->
+        <section id="groups-section" class="section" style="display:none">
+          <div class="section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Groups</span>
+          </div>
+          <button id="btn-new-group" class="btn-primary">New group</button>
+          <div id="group-filter" class="group-filter">
+            <button class="group-filter-btn active" data-group="all" data-type="all">All</button>
+          </div>
+        </section>
+
+        <!-- Saved list -->
+        <section id="saved-section" class="section" style="display:none">
+          <div class="section-label" id="saved-label">Locations</div>
+          <div class="search-wrap">
+            <input id="location-search" class="input input-search" type="search" placeholder="Search by name..." autocomplete="off" />
+            <button id="location-search-clear" class="search-clear" type="button" aria-label="Clear search" title="Clear search" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                <path stroke-linecap="round" d="M6 18 18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <ul id="location-list" class="location-list"></ul>
+        </section>
+
+        <p id="empty-msg" class="empty-msg">No saved locations yet.</p>
+
+        <div id="share-divider" class="divider" style="display:none; margin-top: auto;"></div>
+
+        <!-- Share section -->
+        <section id="share-section" class="section" style="display:none; margin-top: auto;">
+          <div class="section-label">Share locations</div>
+          <button id="btn-export" class="btn-primary">Export as CSV</button>
+          <button id="btn-import" class="btn-primary">Import CSV</button>
+          <input id="csv-input" type="file" accept=".csv" style="display:none;">
+        </section>
+
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── Map area ── -->
+  <div id="map-area">
+
+    <!-- Toggle tab -->
+    <button id="sidebar-toggle" class="closed" aria-label="Open panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+
+    <div id="map"></div>
+
+    <!-- Wind controls -->
+    <div id="wind-controls" class="map-top-controls">
+      <div class="sidebar-control-row">
+        <label class="sidebar-control-label" for="wind-height-select">Height</label>
+        <select id="wind-height-select" class="input input-compact">
+          <option value="10">10 m</option>
+          <option value="80">80 m</option>
+          <option value="120">120 m</option>
+          <option value="180">180 m</option>
+        </select>
+        <label class="sidebar-control-label" for="wind-threshold-select">Threshold</label>
+        <select id="wind-threshold-select" class="input input-compact">
+          <option value="0">0 m/s</option>
+          <option value="2">2 m/s</option>
+          <option value="4">4 m/s</option>
+          <option value="6">6 m/s</option>
+          <option value="8">8 m/s</option>
+          <option value="10">10 m/s</option>
+          <option value="12">12 m/s</option>
+          <option value="14">14 m/s</option>
+          <option value="16">16 m/s</option>
+          <option value="18">18 m/s</option>
+          <option value="20">20 m/s</option>
+          <option value="22">22 m/s</option>
+          <option value="24">24 m/s</option>
+          <option value="26">26 m/s</option>
+          <option value="28">28 m/s</option>
+          <option value="30">30 m/s</option>
+        </select>
+      </div>
+      <div class="sidebar-control-row">
+        <label class="toggle-pill" for="marker-color-toggle">
+          <span class="toggle-label">Below</span>
+          <span class="toggle-switch">
+            <input id="marker-color-toggle" type="checkbox" />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-label">Above</span>
+        </label>
+      </div>
+      <button id="wind-refresh-btn" class="btn-primary btn-icon refresh-outside" title="Refresh data" aria-label="Refresh data">
+        <svg id="wind-refresh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M21 12a9 9 0 10-3 6.708M21 12v-4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+        </svg>
+        <span id="wind-refresh-spinner" class="btn-spinner hidden" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- Name dialog -->
+    <div id="name-dialog" style="display:none">
+      <div class="nd-card">
+        <p class="nd-title">Name this new location</p>
+        <input id="nd-input" class="input" type="text" placeholder="My location" maxlength="60" required />
+        <div class="field" id="nd-group-field" style="display:none">
+          <label for="nd-group">Group (optional)</label>
+          <select id="nd-group" class="input">
+            <option value="">No group</option>
+          </select>
+        </div>
+        <div class="nd-actions">
+          <button id="nd-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="nd-save" class="btn-edit-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export dialog -->
+    <div id="export-dialog" style="display:none">
+      <div class="nd-card" style="max-width: 360px;">
+        <p class="nd-title">Export locations</p>
+        <div id="export-groups-section" class="field" style="display:none">
+          <label style="font-size: 12px; color: var(--text-muted);">Select groups to export:</label>
+          <div id="export-groups-list" class="checkbox-group"></div>
+        </div>
+        <div class="nd-actions">
+          <button id="export-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="export-do" class="btn-edit-save">Export</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import dialog -->
+    <div id="import-dialog" style="display:none">
+      <div class="nd-card" style="max-width: 360px;">
+        <p class="nd-title">Import locations</p>
+        <div class="field">
+          <label style="font-size: 12px; color: var(--text-muted);">Import option:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="import-option" value="keep" checked>
+              <span>Keep the groups of the exporter</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="import-option" value="to-group">
+              <span>Import all locations to an existing group</span>
+            </label>
+          </div>
+        </div>
+        <div id="import-group-select" style="display:none" class="field">
+          <label style="font-size: 12px; color: var(--text-muted);">Select group:</label>
+          <select id="import-group-picker" class="input" style="margin-top: 3px;">
+            <option value="">Import without group</option>
+          </select>
+        </div>
+        <div class="nd-actions">
+          <button id="import-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="import-proceed" class="btn-edit-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual review dialog -->
+    <div id="manual-review-dialog" style="display:none">
+      <div class="nd-card manual-review-card">
+        <p class="nd-title manual-review-title">Locations requiring manual review left: <span id="manual-review-count"></span></p>
+        <div class="field">
+          <label>Name</label>
+          <p id="manual-review-location" class="manual-review-name"></p>
+        </div>
+        <div class="field">
+          <label for="manual-review-lat">Latitude</label>
+          <input id="manual-review-lat" class="input mono" type="text" inputmode="decimal" placeholder="40.4168" />
+        </div>
+        <div class="field">
+          <label for="manual-review-lon">Longitude</label>
+          <input id="manual-review-lon" class="input mono" type="text" inputmode="decimal" placeholder="-3.7038" />
+        </div>
+        <div id="manual-review-error" class="error-msg" style="display:none"></div>
+        <div class="nd-actions">
+          <button id="btn-save-location" class="btn-edit-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit group dialog -->
+    <div id="edit-group-dialog" style="display:none">
+      <div class="nd-card">
+        <p class="nd-title">Edit group</p>
+        <div class="field">
+          <label style="font-size: 12px; color: var(--text-muted);">Group name</label>
+          <input id="edit-group-name" class="input" type="text" placeholder="Group name" maxlength="30" />
+        </div>
+        <div class="field">
+          <label style="font-size: 12px; color: var(--text-muted);">Color</label>
+          <div class="color-picker" id="edit-color-picker">
+            <button class="color-option" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+            <button class="color-option" data-color="#f97316" style="background:#f97316" title="Orange"></button>
+            <button class="color-option" data-color="#eab308" style="background:#eab308" title="Yellow"></button>
+            <button class="color-option" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
+            <button class="color-option" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
+            <button class="color-option" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+            <button class="color-option" data-color="#8b5cf6" style="background:#8b5cf6" title="Purple"></button>
+            <button class="color-option" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+          </div>
+        </div>
+        <div class="nd-actions">
+          <button id="edit-group-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="edit-group-save" class="btn-edit-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete group confirmation -->
+    <div id="delete-group-dialog" style="display:none">
+      <div class="nd-card">
+        <p class="nd-title">Delete group?</p>
+        <p style="font-size: 12px; color: var(--text-muted);">
+          This group contains <span id="delete-group-count">0</span> locations.
+        </p>
+        <p style="font-size: 12px; color: var(--text-muted);">
+          Deleting this group will remove all its locations. <span style="font-weight: bold;">This action cannot be undone.</span>
+        </p>
+        <div class="nd-actions">
+          <button id="delete-group-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="delete-group-confirm" class="btn-edit-save" style="background: #f87171; border-color: #f87171;">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- New group dialog -->
+    <div id="group-dialog" style="display:none">
+      <div class="nd-card">
+        <p class="nd-title">Create new group</p>
+        <input id="group-name-input" class="input" type="text" placeholder="Group name" maxlength="30" />
+        <div class="field">
+          <label>Color</label>
+          <div class="color-picker">
+            <button class="color-option active" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+            <button class="color-option" data-color="#f97316" style="background:#f97316" title="Orange"></button>
+            <button class="color-option" data-color="#eab308" style="background:#eab308" title="Yellow"></button>
+            <button class="color-option" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
+            <button class="color-option" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
+            <button class="color-option" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+            <button class="color-option" data-color="#8b5cf6" style="background:#8b5cf6" title="Purple"></button>
+            <button class="color-option" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+          </div>
+        </div>
+        <div class="nd-actions">
+          <button id="group-cancel" class="btn-edit-cancel">Cancel</button>
+          <button id="group-save" class="btn-edit-save">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weather panel -->
+    <div id="weather-panel">
+      <div class="wp-header">
+        <div style="min-width:0;flex:1;padding-right:8px">
+          <p class="wp-name"></p>
+          <p class="wp-coords"></p>
+        </div>
+        <button class="wp-daily" aria-label="Daily forecast" title="Daily forecast">
+          <p>daily view</p>
+        </button>
+        <button class="wp-expand" aria-label="Expand panel" title="Expand panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+          </svg>
+        </button>
+        <button class="wp-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+            <path stroke-linecap="round" d="M6 18 18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div id="wp-body"></div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Modules (load in order) -->
+  <script src="static/js/modules/data.js"></script>
+  <script src="static/js/modules/locations.js"></script>
+  <script src="static/js/modules/groups.js"></script>
+  <script src="static/js/modules/map.js"></script>
+  <script src="static/js/modules/weather.js"></script>
+  <script src="static/js/modules/import-export.js"></script>
+  <script src="static/js/modules/ui.js"></script>
+
+  <!-- Main app (loads last) -->
+  <script src="static/js/app.js"></script>
+</body>
+</html>
